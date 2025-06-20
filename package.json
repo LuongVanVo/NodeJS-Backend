@@ -1,0 +1,30 @@
+{
+  "name": "nodejs-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LuongVanVo/NodeJS-Backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/LuongVanVo/NodeJS-Backend/issues"
+  },
+  "homepage": "https://github.com/LuongVanVo/NodeJS-Backend#readme",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "compression": "^1.8.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0"
+  }
+}
