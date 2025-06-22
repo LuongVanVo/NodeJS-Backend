@@ -2,11 +2,12 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 dotenv.config();
 import checkConnect from "../helpers/check.connect.js"; 
-
+import config from "../configs/config.mongodb.js";
 // cách connect mới, khuyên dùng 
 
 const connectString = process.env.CONNECTION_STRING;
-
+const dbConnect = `mongodb://${config.db.host}:${config.db.port}/${config.db.name}`;
+console.log(`Connect String: ${dbConnect}`);
 class Database {
   constructor() {
     this.connect();
