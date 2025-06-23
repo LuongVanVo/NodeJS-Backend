@@ -11,7 +11,7 @@ const countConnect = () => {
 
 // check overload
 const checkOverload = () => {
-  setInterval(() => {
+  // setInterval(() => {
     const numConnection = mongoose.connections.length;
     const numCores = os.cpus().length; // dùng lấy số lượng lõi CPU
     const memoryUsage = process.memoryUsage().rss; // sử dụng để lấy bộ nhớ đang sử dụng
@@ -24,7 +24,7 @@ const checkOverload = () => {
     if (numConnection > maxConnections) {
       console.log(`Connection overload detected!`);
     }
-  }, _SECONDS); // Monitor every 5 seconds
+  // }, _SECONDS); // Monitor every 5 seconds
 };
 export default {
   countConnect,
