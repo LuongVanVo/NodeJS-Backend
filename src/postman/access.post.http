@@ -3,6 +3,7 @@
 ### signup
 POST {{url_dev}}/shop/signup
 Content-Type: application/json
+x-api-key: 128da4d3492d4a29f99587489ff5f543158ea3b3b49118e9f64c5ac7a838b8821f07940f703846c150956b3a1b1f6a6ee66c224717f2008dd2b6995f086c45ae
 
 {
     "name": "Shop VOLUONG",

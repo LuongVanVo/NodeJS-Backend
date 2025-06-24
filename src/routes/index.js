@@ -1,16 +1,15 @@
 "use strict";
 
 import express from "express";
-import accessRouter from './access/index.js';
+import accessRouter from "./access/index.js";
+import { apiKey, permission } from "../auth/checkAuth.js";
 
 const router = express.Router();
 
-router.use('/v1/api', accessRouter);
-// router.get("/", (req, res) => {
-//   const strCompress = "Hello VoLuong";
-//   return res.status(200).send({
-//     message: "Welcome Everyone ",
-//   });
-// });
+// check apikey
+router.use(apiKey);
+router.use(permission("0000"));
+// check permission
+router.use("/v1/api", accessRouter);
 
 export default router;
