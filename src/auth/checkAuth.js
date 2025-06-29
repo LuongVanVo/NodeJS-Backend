@@ -26,6 +26,7 @@ export const apiKey = async (req, res, next) => {
     return next();
   } catch (err) {
     console.log(err);
+    next(err);
   }
 };
 
@@ -36,15 +37,24 @@ export const permission = (permission) => {
         message: "Forbidden denied",
       });
     }
-    
-    console.log('permissions::', req.objectKey.permissions);
+
+    console.log("permissions::", req.objectKey.permissions);
     const validPermission = req.objectKey.permissions.includes(permission);
     if (!validPermission) {
-        return res.status(403).send({
+      return res.status(403).send({
         message: "Forbidden denied",
       });
     }
-    
+
     return next();
+  };
+};
+
+// asyncHandler dùng để bắt lỗi bất đồng bộ trong các middleware hoặc route handler
+// nó sẽ tự động chuyển lỗi đến middleware xử lý lỗi tiếp theo
+// dùng thay thế try-catch trong các route handler
+export const asyncHandler = (fn) => {
+  return (req, res, next) => {
+    fn(req, res, next).catch(next);
   };
 };
