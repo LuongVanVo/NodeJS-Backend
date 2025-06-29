@@ -24,9 +24,11 @@ app.use(helmet());
 // giúp giảm băng thông và thời gian tải trang
 app.use(compression());
 app.use(express.json());
-app.use(express.urlencoded({
-    extended: true
-}))
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
 
 // init db
 checkConnect.checkOverload();
@@ -34,5 +36,19 @@ checkConnect.checkOverload();
 app.use(router);
 
 // handle error
+app.use((req, res, next) => {
+  const error = new Error("Not Found");
+  error.status = 404;
+  next(error);
+});
+
+app.use((error, req, res, next) => {
+  const statusCode = error.status || 500;
+  return res.status(statusCode).send({
+    status: "error",
+    code: statusCode,
+    message: error.message || "Internal Server Error",
+  });
+});
 
 export default app;
