@@ -6,7 +6,8 @@ import crypto from "crypto";
 import KeyTokenService from "./keyToken.service.js";
 import { createTokenPair } from "../auth/authUtils.js";
 import { getInfoData } from "../ultis/index.js";
-import { BadRequestError, ConflictRequestError } from "../core/error.response.js";
+import { AuthFailureError, BadRequestError, ConflictRequestError } from "../core/error.response.js";
+import { findByEmail } from "./shop.service.js";
 
 const RoleShop = {
   SHOP: "SHOP",
@@ -18,6 +19,47 @@ const RoleShop = {
 const SALT_ROUND = 10;
 
 class AccessService {
+  /*
+    1 - check email in dbs
+    2 - match password
+    3 - create accessToken and refreshToken and save
+    4 - generate tokens
+    5 - get data return login
+  */
+  static login = async({ email, password, refreshToken = null }) => {
+    // 1 - check email in dbs
+    const foundShop = await findByEmail({email});
+    if (!foundShop) throw new BadRequestError('Shop not registed');
+
+    // 2 - match password
+    const match = await bcrypt.compare(password, foundShop.password);
+    if (!match) throw new AuthFailureError('Authentication Error');
+
+    // 3 - create accessToken and refreshToken and save
+    const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
+          modulusLength: 4096,
+          publicKeyEncoding: {
+            type: "pkcs1", // public key CryptorGraphy Standards 1
+            format: "pem",
+          },
+          privateKeyEncoding: {
+            type: "pkcs1",
+            format: "pem",
+          },
+        });
+    const { _id: userId } = foundShop;
+    const tokens = await createTokenPair({ userId, email }, publicKey, privateKey);
+    
+    await KeyTokenService.createKeyToken({
+      userId,
+      publicKey, privateKey,
+      refreshToken: tokens.refreshToken,
+    });
+    return {
+      shop: getInfoData({ fileds: ['_id', 'name', 'email'], object: foundShop }),
+      tokens
+    }
+  }
   static signUp = async ({ name, email, password }) => {
     // try {
       // step1: check email exists ??

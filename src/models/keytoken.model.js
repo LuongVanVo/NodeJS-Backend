@@ -15,10 +15,14 @@ var keyTokenSchema = new mongoose.Schema({
         type:String,
         required:true,
     },
-    refreshToken:{
+    refreshTokensUsed:{
         type: Array,
-        default: []
+        default: [] // những RefreshToken đã được sử dụng
     },
+    refreshToken: {
+        type: String, 
+        required: true
+    }
 }, {
     collection: COLLECTION_NAME,
     timestamps: true
