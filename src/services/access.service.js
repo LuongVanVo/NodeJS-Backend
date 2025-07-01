@@ -4,10 +4,11 @@ import shopModel from "../models/shop.model.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import KeyTokenService from "./keyToken.service.js";
-import { createTokenPair } from "../auth/authUtils.js";
+import { createTokenPair, verifyJWT } from "../auth/authUtils.js";
 import { getInfoData } from "../ultis/index.js";
-import { AuthFailureError, BadRequestError, ConflictRequestError } from "../core/error.response.js";
+import { AuthFailureError, BadRequestError, ConflictRequestError, ForbiddenError } from "../core/error.response.js";
 import { findByEmail } from "./shop.service.js";
+import keytokenModel from "../models/keytoken.model.js";
 
 const RoleShop = {
   SHOP: "SHOP",
@@ -19,6 +20,63 @@ const RoleShop = {
 const SALT_ROUND = 10;
 
 class AccessService {
+  /* 
+    check this token used ?
+  */
+  static handlerRefreshToken = async (refreshToken) => {
+    // check xem token này đã được sử dụng chưa 
+    const foundToken = await KeyTokenService.findByRefreshTokenUsed(refreshToken);
+    if (foundToken) {
+      // decode xem user la ai ??
+      const { userId, email } = await verifyJWT(refreshToken, foundToken.publicKey);
+      console.log({ userId, email });
+      // xóa tất cả token trong keyStore 
+      await KeyTokenService.deleteKeyById(userId);
+      throw new ForbiddenError('Something wrong happened !! Please relogin')
+    }
+
+    // nếu token chưa được sử dụng 
+    const holderToken = await KeyTokenService.findByRefreshToken(refreshToken);
+    if (!holderToken) throw new AuthFailureError("Shop not registed");
+
+    // verify token
+    const { userId, email } = await verifyJWT(refreshToken, holderToken.publicKey);
+    console.log('[2]---',{ userId, email });
+    // check userId
+    const foundShop = await findByEmail({email});
+    if (!foundShop) throw new AuthFailureError('Shop not registed');
+
+    // create 1 cap moi
+    const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
+          modulusLength: 4096,
+          publicKeyEncoding: {
+            type: "pkcs1", // public key CryptorGraphy Standards 1
+            format: "pem",
+          },
+          privateKeyEncoding: {
+            type: "pkcs1",
+            format: "pem",
+          },
+        });
+    const tokens = await createTokenPair({ userId, email }, publicKey, privateKey);
+    
+    // update token
+    await keytokenModel.updateOne({
+      _id: holderToken._id
+    }, {
+      $set: {
+        refreshToken: tokens.refreshToken
+      }, 
+      $addToSet: {
+        refreshTokensUsed: refreshToken
+      }
+    })
+    return {
+      user: {userId, email},
+      tokens
+    }
+  }
+
   static logout = async ({ keyStore }) => {
     const delKey = await KeyTokenService.removeKeyById(keyStore._id);
     console.log(`delKey: ${delKey}`);
