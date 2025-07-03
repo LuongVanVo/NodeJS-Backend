@@ -67,6 +67,7 @@ export const authentication = asyncHandler( async (req, res, next) => {
     if (userId != decodeUser.userId) throw new AuthFailureError('Invalid User');
     // dùng để đưa keyStore theo authentication để sử dụng trong các middleware khác
     req.keyStore = keyStore;
+    req.user = decodeUser; // {userId, email}
     return next(); 
   } catch (err) {
     throw err;
