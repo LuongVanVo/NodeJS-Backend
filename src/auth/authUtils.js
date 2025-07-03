@@ -2,12 +2,13 @@
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../helpers/asyncHandler.js";
 import { AuthFailureError, NotFoundError } from "../core/error.response.js";
-import KeyTokenService  from "../services/keyToken.service.js";
+import KeyTokenService from "../services/keyToken.service.js";
 
 const HEADER = {
   API_KEY: "x-api-key",
-  CLIENT_ID: 'x-client-id',
+  CLIENT_ID: "x-client-id",
   AUTHORIZATION: "authorization",
+  REFRESHTOKEN: "x-rtoken-id",
 };
 
 export const createTokenPair = async (payload, publicKey, privateKey) => {
@@ -36,7 +37,7 @@ export const createTokenPair = async (payload, publicKey, privateKey) => {
   } catch (error) {}
 };
 
-export const authentication = asyncHandler( async (req, res, next) => {
+export const authentication = asyncHandler(async (req, res, next) => {
   /*
     1 - Check userId missing ?
     2 - Get accessToken 
@@ -46,34 +47,87 @@ export const authentication = asyncHandler( async (req, res, next) => {
     6 - OK all => return next()
   */
 
-    // 1 - Kiểm tra xem client có gửi userId không (qua header CLIENT_ID)
-    // Mục đích: xác định xem ai đang gửi request đến 
+  // 1 - Kiểm tra xem client có gửi userId không (qua header CLIENT_ID)
+  // Mục đích: xác định xem ai đang gửi request đến
   const userId = req.headers[HEADER.CLIENT_ID];
-  if (!userId) throw new AuthFailureError('Invalid Request 1');
+  if (!userId) throw new AuthFailureError("Invalid Request 1");
 
-  // 2 - Dựa vào userId, tìm kiếm trong CSDL một bản ghi chứa publicKey 
-  // Mục đích: dùng để xác minh tính hợp lệ  của JWT bằng publicKey 
+  // 2 - Dựa vào userId, tìm kiếm trong CSDL một bản ghi chứa publicKey
+  // Mục đích: dùng để xác minh tính hợp lệ  của JWT bằng publicKey
   const keyStore = await KeyTokenService.findByUserId(userId);
-  if (!keyStore) throw new NotFoundError('Not found keyStore');
+  if (!keyStore) throw new NotFoundError("Not found keyStore");
 
   // 3 - Kiểm tra xem client có gửi accessToken không (qua header AUTHORIZATION)
-  // Mục đích: Token này sẽ được dùng để xác thực danh tính 
+  // Mục đích: Token này sẽ được dùng để xác thực danh tính
   const accessToken = req.headers[HEADER.AUTHORIZATION];
-  if (!accessToken) throw new AuthFailureError('Invalid Request 2');
+  if (!accessToken) throw new AuthFailureError("Invalid Request 2");
 
   try {
-    // Dùng JWT để xác thực token với publicKey từ keyStore 
+    // Dùng JWT để xác thực token với publicKey từ keyStore
     const decodeUser = jwt.verify(accessToken, keyStore.publicKey);
-    if (userId != decodeUser.userId) throw new AuthFailureError('Invalid User');
+    if (userId != decodeUser.userId) throw new AuthFailureError("Invalid User");
     // dùng để đưa keyStore theo authentication để sử dụng trong các middleware khác
     req.keyStore = keyStore;
     req.user = decodeUser; // {userId, email}
-    return next(); 
+    return next();
   } catch (err) {
     throw err;
   }
-})
+});
+
+export const authenticationV2 = asyncHandler(async (req, res, next) => {
+  /*
+    1 - Check userId missing ?
+    2 - Get accessToken 
+    3 - verify token
+    4 - check user in dbs ?
+    5 - check keyStore with this userId ?
+    6 - OK all => return next()
+  */
+
+  // 1 - Kiểm tra xem client có gửi userId không (qua header CLIENT_ID)
+  // Mục đích: xác định xem ai đang gửi request đến
+  const userId = req.headers[HEADER.CLIENT_ID];
+  if (!userId) throw new AuthFailureError("Invalid Request 1");
+
+  // 2 - Dựa vào userId, tìm kiếm trong CSDL một bản ghi chứa publicKey
+  // Mục đích: dùng để xác minh tính hợp lệ  của JWT bằng publicKey
+  const keyStore = await KeyTokenService.findByUserId(userId);
+  if (!keyStore) throw new NotFoundError("Not found keyStore");
+
+  // 3 - Kiểm tra xem client có gửi accessToken không (qua header AUTHORIZATION)
+  // Mục đích: Token này sẽ được dùng để xác thực danh tính
+  if (req.headers[HEADER.REFRESHTOKEN]) {
+    try {
+      const refreshToken = req.headers[HEADER.REFRESHTOKEN];
+      const decodeUser = jwt.verify(refreshToken, keyStore.publicKey);
+      if (userId != decodeUser.userId)
+        throw new AuthFailureError("Invalid UserId");
+      req.keyStore = keyStore;
+      req.user = decodeUser;
+      req.refreshToken = refreshToken;
+      return next();
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  const accessToken = req.headers[HEADER.AUTHORIZATION];
+  if (!accessToken) throw new AuthFailureError("Invalid Request 2");
+
+  try {
+    // Dùng JWT để xác thực token với publicKey từ keyStore
+    const decodeUser = jwt.verify(accessToken, keyStore.publicKey);
+    if (userId != decodeUser.userId) throw new AuthFailureError("Invalid User");
+    // dùng để đưa keyStore theo authentication để sử dụng trong các middleware khác
+    req.keyStore = keyStore;
+    req.user = decodeUser; // {userId, email}
+    return next();
+  } catch (err) {
+    throw err;
+  }
+});
 
 export const verifyJWT = async (token, keySecret) => {
   return await jwt.verify(token, keySecret);
-}
+};

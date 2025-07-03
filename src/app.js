@@ -47,6 +47,7 @@ app.use((error, req, res, next) => {
   return res.status(statusCode).send({
     status: "error",
     code: statusCode,
+    // stack: error.stack, // only for development, dùng để debug
     message: error.message || "Internal Server Error",
   });
 });
