@@ -23,26 +23,18 @@ class AccessService {
   /* 
     check this token used ?
   */
-  static handlerRefreshToken = async (refreshToken) => {
-    // check xem token này đã được sử dụng chưa 
-    const foundToken = await KeyTokenService.findByRefreshTokenUsed(refreshToken);
-    if (foundToken) {
-      // decode xem user la ai ??
-      const { userId, email } = await verifyJWT(refreshToken, foundToken.publicKey);
-      console.log({ userId, email });
+  static handlerRefreshTokenV2 = async ({ keyStore, user, refreshToken }) => {
+    const { userId, email } = user;
+
+    // neu token da duoc su dung 
+    if (keyStore.refreshTokensUsed.includes(refreshToken)) {
       // xóa tất cả token trong keyStore 
       await KeyTokenService.deleteKeyById(userId);
       throw new ForbiddenError('Something wrong happened !! Please relogin')
-    }
+    } 
 
-    // nếu token chưa được sử dụng 
-    const holderToken = await KeyTokenService.findByRefreshToken(refreshToken);
-    if (!holderToken) throw new AuthFailureError("Shop not registed");
+    if (keyStore.refreshToken !== refreshToken) throw new AuthFailureError('Shop not registed');
 
-    // verify token
-    const { userId, email } = await verifyJWT(refreshToken, holderToken.publicKey);
-    console.log('[2]---',{ userId, email });
-    // check userId
     const foundShop = await findByEmail({email});
     if (!foundShop) throw new AuthFailureError('Shop not registed');
 
@@ -62,7 +54,7 @@ class AccessService {
     
     // update token
     await keytokenModel.updateOne({
-      _id: holderToken._id
+      _id: keyStore._id
     }, {
       $set: {
         refreshToken: tokens.refreshToken
@@ -72,7 +64,7 @@ class AccessService {
       }
     })
     return {
-      user: {userId, email},
+      user,
       tokens
     }
   }
