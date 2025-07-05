@@ -6,9 +6,17 @@ import productController from '../../controllers/product.controller.js';
 
 const router = express.Router();
 
+// search khong can check authen trong viec tim kiem
+router.post("/search/:keySearch", asyncHandler(productController.getListSearchProduct));
 // authentication
 router.use(authentication);
 // create Product
 router.post('/', asyncHandler(productController.createProduct));
+router.post('/publish/:id', asyncHandler(productController.publishProductByShop));
+router.post('/unpublish/:id', asyncHandler(productController.unPublishProductByShop));
+
+/// QUERY //
+router.get('/drafts/all', asyncHandler(productController.getAllDraftsForShop));
+router.get('/published/all', asyncHandler(productController.getAllPublishForShop));
 
 export default router;
