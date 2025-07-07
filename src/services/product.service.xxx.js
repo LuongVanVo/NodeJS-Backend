@@ -13,8 +13,10 @@ import {
   unPublishProductByShop, 
   searchProductByUser,
   findAllProducts,
-  findProduct
+  findProduct,
+  updateProductById
 } from "../models/repositories/product.repo.js";
+import { removeUndefinedObject, updateNestedObjectParser } from "../ultis/index.js";
 
 // define Factory class to create product
 class ProductFactory {
@@ -35,11 +37,11 @@ class ProductFactory {
     return new productClass(payload).createProduct();
   }
 
-  static async updateProduct(type, payload) {
+  static async updateProduct(type, productId, payload) {
     const productClass = ProductFactory.productRegistry[type];
     if (!productClass) throw new BadRequestError(`Invalid Product Types ${type}`);
 
-    return new productClass(payload).createProduct();
+    return new productClass(payload).updateProduct(productId);
   }
 
   // PUT //
@@ -103,6 +105,10 @@ class Product {
   async createProduct(product_id) {
     return await productModel.create({ ...this, _id: product_id });
   }
+  // update product
+  async updateProduct(productId, bodyUpdate) {
+    return await updateProductById({ productId, bodyUpdate, model: productModel });
+  }
 }
 
 // Define sub-class for different product types Clothing
@@ -118,6 +124,21 @@ class Clothing extends Product {
     if (!newProduct) throw new BadRequestError("create new Product error");
 
     return newProduct;
+  }
+
+  async updateProduct(productId) {
+    // 1. remove attribute has null or undefined
+    // console.log(`[1]::`, this);
+    const objectParams = removeUndefinedObject(this);
+    // console.log(`[2]::`, objectParams);
+    // 2. check xem update o cho nao ?
+    if (objectParams.product_attributes) {
+      // update child
+      await updateProductById({ productId, bodyUpdate: updateNestedObjectParser(objectParams.product_attributes), model: clothingModel });
+    }
+    // update product
+    const updateProduct = await super.updateProduct(productId, updateNestedObjectParser(objectParams));
+    return updateProduct;
   }
 }
 
