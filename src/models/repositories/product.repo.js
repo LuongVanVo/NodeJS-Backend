@@ -69,6 +69,17 @@ export const findProduct = async ({ product_id, unSelect }) => {
     return await productModel.findById(product_id).select(ungetSelectData(unSelect)).lean();
 }
 
+export const updateProductById = async ({
+    productId,
+    bodyUpdate,
+    model, 
+    isNew = true
+}) => {
+    return await model.findByIdAndUpdate(productId, bodyUpdate, {
+        new: isNew, // tra ve object moi sau khi update
+    });
+}
+
 const queryProduct = async ({ query, limit, skip }) => {
     return await productModel.find(query)
             .populate('product_shop', 'name email')
