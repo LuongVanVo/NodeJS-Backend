@@ -8,6 +8,10 @@ const router = express.Router();
 
 // search khong can check authen trong viec tim kiem
 router.post("/search/:keySearch", asyncHandler(productController.getListSearchProduct));
+
+router.get("/", asyncHandler(productController.findAllProducts));
+router.get("/:product_id", asyncHandler(productController.findProduct));
+
 // authentication
 router.use(authentication);
 // create Product

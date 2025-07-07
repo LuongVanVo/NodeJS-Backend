@@ -1,3 +1,4 @@
+import { getSelectData, ungetSelectData } from "../../ultis/index.js";
 import productModel, { electronicModel, furnitureModel, clothingModel } from "../product.model.js";
 import { Types } from "mongoose";
 
@@ -20,6 +21,7 @@ export const searchProductByUser = async ({ keySearch }) => {
     .lean()
     return await result;
 }
+
 
 export const publishProductByShop = async({ product_shop, product_id }) => {
     const foundShop = await productModel.findOne({
@@ -47,6 +49,24 @@ export const unPublishProductByShop = async ({ product_shop, product_id }) => {
 
     const { modifiedCount } = await foundShop.updateOne(foundShop); 
     return modifiedCount; // 0: khong co update nao, 1: update thanh cong 
+}
+
+export const findAllProducts = async ({ limit, sort, page, filter, select }) => {
+    const skip = (page - 1) * limit;
+    const sortBy = sort === 'ctime' ? { _id: -1 } : { _id: 1};
+    const products = await productModel.find(filter)
+        .sort(sortBy)
+        .skip(skip)
+        .limit(limit)
+        .select(getSelectData(select))
+        .lean()
+
+        return products;
+}
+
+// get detail a product
+export const findProduct = async ({ product_id, unSelect }) => {
+    return await productModel.findById(product_id).select(ungetSelectData(unSelect)).lean();
 }
 
 const queryProduct = async ({ query, limit, skip }) => {
