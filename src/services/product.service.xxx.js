@@ -17,6 +17,7 @@ import {
   updateProductById
 } from "../models/repositories/product.repo.js";
 import { removeUndefinedObject, updateNestedObjectParser } from "../ultis/index.js";
+import { insertInventory } from "../models/repositories/inventory.repo.js";
 
 // define Factory class to create product
 class ProductFactory {
@@ -103,7 +104,16 @@ class Product {
   }
   // create new product
   async createProduct(product_id) {
-    return await productModel.create({ ...this, _id: product_id });
+    const newProduct = await productModel.create({ ...this, _id: product_id });
+    if (newProduct) {
+      // add product_stock into inventory collection
+      await insertInventory({ 
+        productId: newProduct._id,
+        shopId: this.product_shop,
+        stock: this.product_quantity,
+      })
+    } 
+    return newProduct;
   }
   // update product
   async updateProduct(productId, bodyUpdate) {
