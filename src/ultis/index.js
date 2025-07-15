@@ -1,5 +1,6 @@
 "use strict";
 import _ from "lodash";
+import { Types } from "mongoose";
 
 export const getInfoData = ({ fileds = [], object = {} }) => {
   return _.pick(object, fileds);
@@ -40,4 +41,9 @@ export const updateNestedObjectParser = obj => {
   })
   console.log(`[2]::`, final);
   return final;
+}
+
+// Chuyển đổi String thành ObjectId 
+export const convertToObjectIdMongodb = id => {
+  return new Types.ObjectId(id)
 }
