@@ -1,4 +1,4 @@
-import { getSelectData, ungetSelectData } from "../../ultis/index.js";
+import { convertToObjectIdMongodb, getSelectData, ungetSelectData } from "../../ultis/index.js";
 import productModel, { electronicModel, furnitureModel, clothingModel } from "../product.model.js";
 import { Types } from "mongoose";
 
@@ -88,4 +88,8 @@ const queryProduct = async ({ query, limit, skip }) => {
             .limit(limit)
             .lean()
             .exec()
+}
+
+export const getProductById = async (productId) => {
+    return await productModel.findOne({ _id: convertToObjectIdMongodb(productId) }).lean();
 }
